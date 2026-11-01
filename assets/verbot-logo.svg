@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- NovOS Deep Obsidian Circular Badge Gradient -->
+    <radialGradient id="obsidianBadge" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#121521"/>
+      <stop offset="75%" stop-color="#0B0C10"/>
+      <stop offset="100%" stop-color="#07080B"/>
+    </radialGradient>
+
+    <!-- NovOS Cosmic Space Chassis Surface -->
+    <linearGradient id="robotChassis" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E2233"/>
+      <stop offset="55%" stop-color="#121521"/>
+      <stop offset="100%" stop-color="#0F121C"/>
+    </linearGradient>
+
+    <!--COSMIC Nova Orange -> Accretion Amber Gradient -->
+    <linearGradient id="novaOrangeRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B1A"/>
+      <stop offset="50%" stop-color="#FF9E44"/>
+      <stop offset="100%" stop-color="#FF6B1A"/>
+    </linearGradient>
+
+    <!-- Speaker Cone Depth Gradient -->
+    <radialGradient id="speakerCone" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#FFF3E0"/>
+      <stop offset="30%" stop-color="#FF9E44"/>
+      <stop offset="70%" stop-color="#FF6B1A"/>
+      <stop offset="100%" stop-color="#121521"/>
+    </radialGradient>
+
+    <!-- Supernova Core Halo Glow -->
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="48%">
+      <stop offset="0%" stop-color="#FFF3E0" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#FF9E44" stop-opacity="0.65"/>
+      <stop offset="70%" stop-color="#FF6B1A" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#FF6B1A" stop-opacity="0.0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Deep Obsidian Circular Badge (#0B0C10) -->
+  <circle cx="128" cy="128" r="120" fill="url(#obsidianBadge)" stroke="#FF6B1A" stroke-width="3" stroke-opacity="0.65"/>
+  <circle cx="128" cy="128" r="112" fill="none" stroke="#1E2233" stroke-width="1.75"/>
+
+  <!-- Subtle Background Nova Aura & Orbital Ring -->
+  <ellipse cx="128" cy="132" rx="96" ry="36" transform="rotate(-22 128 132)"
+           fill="none" stroke="url(#novaOrangeRim)" stroke-width="2.5" stroke-opacity="0.35" stroke-dasharray="12 8"/>
+  <circle cx="128" cy="120" r="78" fill="url(#coreGlow)"/>
+
+  <!-- Radiating Acoustic Soundwaves from Speaker Ears -->
+  <!-- Left Soundwaves -->
+  <path d="M 32 96 A 32 32 0 0 0 32 140" fill="none" stroke="#FF9E44" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <path d="M 21 86 A 46 46 0 0 0 21 150" fill="none" stroke="#FF6B1A" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+  <!-- Right Soundwaves -->
+  <path d="M 224 96 A 32 32 0 0 1 224 140" fill="none" stroke="#FF9E44" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <path d="M 235 86 A 46 46 0 0 1 235 150" fill="none" stroke="#FF6B1A" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Top Transceiver Antenna -->
+  <rect x="123" y="42" width="10" height="24" rx="4" fill="#1E2233" stroke="#FF6B1A" stroke-width="2"/>
+  <rect x="114" y="60" width="28" height="8" rx="3" fill="#121521" stroke="#FF9E44" stroke-width="2"/>
+  <circle cx="128" cy="36" r="10" fill="#FF6B1A"/>
+  <circle cx="128" cy="36" r="5.5" fill="#FFF3E0"/>
+
+  <!-- LEFT SPEAKER-CONE EAR -->
+  <g id="speaker-ear-left">
+    <!-- Flared Speaker Housing -->
+    <polygon points="68,94 42,82 42,154 68,142" fill="url(#robotChassis)" stroke="#FF6B1A" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Inner Speaker Cone Woofer Rings -->
+    <ellipse cx="53" cy="118" rx="8" ry="22" fill="#0B0C10" stroke="#FF9E44" stroke-width="2.2"/>
+    <ellipse cx="53" cy="118" rx="4.5" ry="12" fill="url(#speakerCone)"/>
+    <ellipse cx="52" cy="118" rx="2.2" ry="5.5" fill="#FFF3E0"/>
+    <!-- Mounting Strut -->
+    <rect x="66" y="103" width="8" height="30" rx="2" fill="#1E2233" stroke="#FF6B1A" stroke-width="2"/>
+  </g>
+
+  <!-- RIGHT SPEAKER-CONE EAR -->
+  <g id="speaker-ear-right">
+    <!-- Flared Speaker Housing -->
+    <polygon points="188,94 214,82 214,154 188,142" fill="url(#robotChassis)" stroke="#FF6B1A" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Inner Speaker Cone Woofer Rings -->
+    <ellipse cx="203" cy="118" rx="8" ry="22" fill="#0B0C10" stroke="#FF9E44" stroke-width="2.2"/>
+    <ellipse cx="203" cy="118" rx="4.5" ry="12" fill="url(#speakerCone)"/>
+    <ellipse cx="204" cy="118" rx="2.2" ry="5.5" fill="#FFF3E0"/>
+    <!-- Mounting Strut -->
+    <rect x="182" y="103" width="8" height="30" rx="2" fill="#1E2233" stroke="#FF6B1A" stroke-width="2"/>
+  </g>
+
+  <!-- COMPACT BOXY ROBOT TORSO -->
+  <g id="robot-torso">
+    <!-- Neck Joint -->
+    <rect x="112" y="164" width="32" height="12" rx="3" fill="#0B0C10" stroke="#1E2233" stroke-width="2"/>
+    <!-- Boxy Chest Unit -->
+    <rect x="86" y="173" width="84" height="48" rx="10" fill="url(#robotChassis)" stroke="#FF6B1A" stroke-width="3"/>
+    <!-- Chest Prompt Screen (>_) -->
+    <rect x="98" y="182" width="60" height="30" rx="5" fill="#0B0C10" stroke="#1E2233" stroke-width="2"/>
+    <polyline points="108,191 116,197 108,203" fill="none" stroke="#FF6B1A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="122" y1="203" x2="134" y2="203" stroke="#FFF3E0" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="146" cy="197" r="3" fill="#FFB347"/>
+  </g>
+
+  <!-- CARTOON BOXY ROBOT HEAD -->
+  <g id="robot-head">
+    <!-- Outer Boxy Head Shell -->
+    <rect x="72" y="66" width="112" height="100" rx="18" fill="url(#robotChassis)" stroke="url(#novaOrangeRim)" stroke-width="3.5"/>
+    <!-- Inner Bevel Highlight -->
+    <rect x="77" y="71" width="102" height="90" rx="14" fill="none" stroke="#1E2233" stroke-width="2"/>
+
+    <!-- Corner Rivets (Starfield Cool White #D8E2FF) -->
+    <circle cx="83" cy="77" r="2.2" fill="#D8E2FF" opacity="0.8"/>
+    <circle cx="173" cy="77" r="2.2" fill="#D8E2FF" opacity="0.8"/>
+    <circle cx="83" cy="155" r="2.2" fill="#D8E2FF" opacity="0.8"/>
+    <circle cx="173" cy="155" r="2.2" fill="#D8E2FF" opacity="0.8"/>
+
+    <!-- Deep Obsidian Visor Faceplate (#0B0C10) -->
+    <rect x="84" y="80" width="88" height="52" rx="10" fill="#0B0C10" stroke="#1E2233" stroke-width="2.5"/>
+
+    <!-- Left Glowing Cartoon Eye -->
+    <circle cx="106" cy="106" r="13" fill="#FF6B1A"/>
+    <circle cx="106" cy="106" r="9.5" fill="#FF9E44"/>
+    <circle cx="106" cy="106" r="5.5" fill="#FFF3E0"/>
+    <circle cx="102" cy="102" r="2.2" fill="#D8E2FF"/>
+
+    <!-- Right Glowing Cartoon Eye -->
+    <circle cx="150" cy="106" r="13" fill="#FF6B1A"/>
+    <circle cx="150" cy="106" r="9.5" fill="#FF9E44"/>
+    <circle cx="150" cy="106" r="5.5" fill="#FFF3E0"/>
+    <circle cx="146" cy="102" r="2.2" fill="#D8E2FF"/>
+
+    <!-- Voice Equalizer / Synthesizer Mouth Grille -->
+    <rect x="94" y="139" width="68" height="16" rx="5" fill="#07080B" stroke="#FF9E44" stroke-width="1.8"/>
+    <rect x="101" y="144" width="5" height="6" rx="1.5" fill="#FF6B1A"/>
+    <rect x="110" y="142" width="5" height="10" rx="1.5" fill="#FF9E44"/>
+    <rect x="119" y="141" width="5" height="12" rx="1.5" fill="#FFB347"/>
+    <rect x="128" y="140" width="5" height="14" rx="1.5" fill="#FFF3E0"/>
+    <rect x="137" y="142" width="5" height="10" rx="1.5" fill="#FFB347"/>
+    <rect x="146" y="143" width="5" height="8" rx="1.5" fill="#FF9E44"/>
+    <rect x="155" y="145" width="4" height="4" rx="1.5" fill="#FF6B1A"/>
+  </g>
+</svg>

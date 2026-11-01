@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: false
+        default: "v0.1.0"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package-and-release:
+    name: Build Release Artifacts & Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Validate shell scripts and run verification gates
+        run: |
+          bash -n bin/verbot scripts/dispatch-agy.sh scripts/dispatch-output.sh install.sh scripts/package.sh
+          cargo test --locked
+          cargo run --locked -- --self-test
+
+      - name: Build release packages (.tar.gz, .deb, SHA256SUMS)
+        run: |
+          ./scripts/package.sh --out-dir ./dist
+          cp install.sh ./dist/install.sh
+          ls -lh ./dist
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+            dist/*.deb
+            dist/SHA256SUMS
+            dist/install.sh
+          generate_release_notes: true

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify:
+    name: Build, Self-Test & Package Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Validate shell scripts with bash -n
+        run: |
+          bash -n bin/verbot scripts/dispatch-agy.sh scripts/dispatch-output.sh install.sh scripts/package.sh
+
+      - name: Run unit test suite
+        run: cargo test --locked
+
+      - name: Run automated self-test gate
+        run: cargo run --locked -- --self-test
+
+      - name: Build release binary & test distribution packager
+        run: |
+          cargo build --release --locked
+          ./scripts/package.sh --skip-build --out-dir ./dist
+          ls -lh ./dist

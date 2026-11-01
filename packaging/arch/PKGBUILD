@@ -1,0 +1,35 @@
+# Maintainer: Verbocity Maintainers <maintainers@novos.dev>
+pkgname=verbot
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Verbocity (verbot) — Interactive terminal LLM prompt template engine and agy dispatcher"
+arch=('x86_64' 'aarch64')
+url="https://github.com/InfoMoose/VerBot"
+license=('MIT')
+depends=('bash' 'gcc-libs')
+makedepends=('cargo')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "VerBot-${pkgver}"
+    cargo build --release --locked
+}
+
+check() {
+    cd "VerBot-${pkgver}"
+    cargo test --release --locked
+}
+
+package() {
+    cd "VerBot-${pkgver}"
+    install -Dm755 "bin/verbot" "${pkgdir}/usr/bin/verbot"
+    install -Dm755 "target/release/verbot-tui" "${pkgdir}/usr/bin/verbot-tui"
+    install -Dm755 "scripts/dispatch-agy.sh" "${pkgdir}/usr/share/verbot/scripts/dispatch-agy.sh"
+    install -Dm755 "scripts/dispatch-output.sh" "${pkgdir}/usr/share/verbot/scripts/dispatch-output.sh"
+    install -Dm644 "assets/verbot-logo.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/verbot.svg"
+    install -Dm644 "assets/verbot.desktop" "${pkgdir}/usr/share/applications/verbot.desktop"
+    install -Dm644 "templates/GeminiAgentPromptTemplate.md" "${pkgdir}/usr/share/verbot/templates/GeminiAgentPromptTemplate.md"
+    install -Dm644 "templates/GeminiAgentPromptTemplate.toml" "${pkgdir}/usr/share/verbot/templates/GeminiAgentPromptTemplate.toml"
+    install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

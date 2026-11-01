@@ -1,0 +1,31 @@
+# Rust / Cargo build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Project-local Verbocity state & ingested templates
+/.verbot/
+
+# Packaging & release outputs
+/dist/
+/packages/
+*.tar.gz
+*.tar.zst
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.sha256
+SHA256SUMS
+
+# Saved prompt scratch files
+/verbot-prompt.md
+*.verbot-prompt.md
+
+# OS & editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+/.idea/
+/.vscode/

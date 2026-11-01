@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Verbocity
+GenericName=LLM Prompt Template Engine & agy Dispatcher
+Comment=Interactive terminal prompt template engine and agy dispatcher styled for NovOS & COSMIC DE
+Exec=verbot
+Icon=verbot
+Terminal=true
+Categories=Development;Utility;ConsoleOnly;
+Keywords=verbot;verbocity;llm;prompt;agy;gemini;claude;gpt;cosmic;novos;
+StartupNotify=false

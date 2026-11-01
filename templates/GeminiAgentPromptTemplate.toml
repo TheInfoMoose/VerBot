@@ -1,0 +1,26 @@
+name = "Gemini Agent Prompt Template"
+description = "Concise, high-density structured agent prompt template for Gemini, Claude, and GPT"
+default_command = "plan"
+commands = ["plan", "boost", "goal"]
+
+[[fields]]
+id = "objective"
+label = "Objective"
+placeholder = "1-2 sentence symptom or objective"
+inline_with_command = true
+
+[[fields]]
+id = "context_logs"
+label = "Context/Logs"
+placeholder = "file paths or terminal snippet"
+
+[[fields]]
+id = "constraints"
+label = "Constraints"
+placeholder = "what to omit, change structurally, or not run (e.g., \"No QEMU\", \"Drop .img\")"
+
+[[fields]]
+id = "output"
+label = "Output"
+placeholder = "Diagnose only | Update <file>.md plan | Execute Step X"
+choices = ["Diagnose only", "Update <file>.md plan", "Execute Step X"]

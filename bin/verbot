@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Verbocity (`verbot`) — Top-Level CLI Launcher & Stdin Pipe Wrapper
+# ==============================================================================
+# 1. Detects piped `stdin` (`if [ ! -t 0 ]; then ...`), captures piped log or
+#    command output into a temporary context file passed via `--stdin-file` to
+#    `verbot-tui` (pre-populating `Context/Logs`), and reattaches interactive
+#    terminal I/O to `/dev/tty`.
+# 2. Invokes `verbot-tui` in the user's current working directory.
+# 3. Reads the structured JSON `DispatchManifest` written on exit and routes to
+#    `scripts/dispatch-agy.sh` or `scripts/dispatch-output.sh`.
+# ==============================================================================
+
+set -euo pipefail
+
+resolve_script_dir() {
+    local src="${BASH_SOURCE[0]}"
+    while [[ -L "$src" ]]; do
+        local dir
+        dir="$(cd -P "$(dirname "$src")" && pwd)"
+        src="$(readlink "$src")"
+        [[ "$src" != /* ]] && src="${dir}/${src}"
+    done
+    cd -P "$(dirname "$src")" && pwd
+}
+
+SCRIPT_DIR="$(resolve_script_dir)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+resolve_verbot_tui() {
+    if [[ -n "${VERBOT_TUI_BIN:-}" && -x "${VERBOT_TUI_BIN}" ]]; then
+        echo "${VERBOT_TUI_BIN}"
+        return 0
+    fi
+    if [[ -x "${SCRIPT_DIR}/verbot-tui" ]]; then
+        echo "${SCRIPT_DIR}/verbot-tui"
+        return 0
+    fi
+    if [[ -x "${REPO_ROOT}/target/release/verbot-tui" ]]; then
+        echo "${REPO_ROOT}/target/release/verbot-tui"
+        return 0
+    fi
+    if [[ -x "${REPO_ROOT}/target/debug/verbot-tui" ]]; then
+        echo "${REPO_ROOT}/target/debug/verbot-tui"
+        return 0
+    fi
+    if command -v verbot-tui >/dev/null 2>&1; then
+        command -v verbot-tui
+        return 0
+    fi
+    if [[ -x "${HOME}/.local/bin/verbot-tui" ]]; then
+        echo "${HOME}/.local/bin/verbot-tui"
+        return 0
+    fi
+    return 1
+}
+
+resolve_dispatch_script() {
+    local script_name="$1"
+    if [[ -x "${REPO_ROOT}/scripts/${script_name}" ]]; then
+        echo "${REPO_ROOT}/scripts/${script_name}"
+        return 0
+    fi
+    if [[ -x "${SCRIPT_DIR}/../share/verbot/scripts/${script_name}" ]]; then
+        echo "${SCRIPT_DIR}/../share/verbot/scripts/${script_name}"
+        return 0
+    fi
+    if [[ -x "${HOME}/.local/share/verbot/scripts/${script_name}" ]]; then
+        echo "${HOME}/.local/share/verbot/scripts/${script_name}"
+        return 0
+    fi
+    if [[ -x "/usr/local/share/verbot/scripts/${script_name}" ]]; then
+        echo "/usr/local/share/verbot/scripts/${script_name}"
+        return 0
+    fi
+    if [[ -x "/usr/share/verbot/scripts/${script_name}" ]]; then
+        echo "/usr/share/verbot/scripts/${script_name}"
+        return 0
+    fi
+    if [[ -x "${SCRIPT_DIR}/${script_name}" ]]; then
+        echo "${SCRIPT_DIR}/${script_name}"
+        return 0
+    fi
+    return 1
+}
+
+if ! TUI_BIN="$(resolve_verbot_tui)"; then
+    echo "Error [verbot]: Could not locate 'verbot-tui' binary. Run 'cargo build --release' or './install.sh' first." >&2
+    exit 1
+fi
+
+# Pass-through subcommands or flags that exit immediately without dispatch
+PASSTHROUGH=0
+HAS_HEADLESS=0
+DRY_RUN_DISPATCH=0
+FORWARD_ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        ingest|--self-test|--help|-h|--version|-V)
+            PASSTHROUGH=1
+            FORWARD_ARGS+=("$arg")
+            ;;
+        --headless)
+            HAS_HEADLESS=1
+            FORWARD_ARGS+=("$arg")
+            ;;
+        --dry-run-dispatch)
+            DRY_RUN_DISPATCH=1
+            ;;
+        *)
+            FORWARD_ARGS+=("$arg")
+            ;;
+    esac
+done
+
+if [[ "$PASSTHROUGH" -eq 1 ]]; then
+    exec "$TUI_BIN" "${FORWARD_ARGS[@]}"
+fi
+
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/verbot.XXXXXX")"
+STDIN_CAPTURE_FILE="${TMP_DIR}/stdin_context.txt"
+DISPATCH_MANIFEST_FILE="${TMP_DIR}/dispatch_manifest.json"
+
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
+EXTRA_TUI_ARGS=()
+
+# Detect piped stdin (`if [ ! -t 0 ]; then ...`) and capture into temporary buffer
+if [ ! -t 0 ]; then
+    cat - > "$STDIN_CAPTURE_FILE" || true
+    if [[ -s "$STDIN_CAPTURE_FILE" ]]; then
+        EXTRA_TUI_ARGS+=(--stdin-file "$STDIN_CAPTURE_FILE")
+    fi
+fi
+
+# Invoke `verbot-tui` in the user's current working directory.
+# In interactive mode, `verbot-tui` executes actions directly inside the TUI
+# (streaming `agy -p` into the Terminal Execution Output Pane and suspending/resuming
+# for `agy -i` interactive sessions) so Verbocity stays open until the user presses Ctrl+Q.
+if [[ "$HAS_HEADLESS" -eq 1 ]]; then
+    EXTRA_TUI_ARGS+=(--dispatch-out "$DISPATCH_MANIFEST_FILE")
+    "$TUI_BIN" "${EXTRA_TUI_ARGS[@]}" "${FORWARD_ARGS[@]}"
+elif [ ! -t 0 ]; then
+    if [[ -r /dev/tty && -w /dev/tty ]]; then
+        "$TUI_BIN" "${EXTRA_TUI_ARGS[@]}" "${FORWARD_ARGS[@]}" </dev/tty >/dev/tty
+        exit 0
+    else
+        # Fallback to headless mode if no controlling `/dev/tty` is available
+        EXTRA_TUI_ARGS+=(--dispatch-out "$DISPATCH_MANIFEST_FILE")
+        "$TUI_BIN" --headless "${EXTRA_TUI_ARGS[@]}" "${FORWARD_ARGS[@]}"
+    fi
+else
+    "$TUI_BIN" "${EXTRA_TUI_ARGS[@]}" "${FORWARD_ARGS[@]}"
+    exit 0
+fi
+
+# If no headless dispatch manifest was written, exit cleanly
+if [[ ! -s "$DISPATCH_MANIFEST_FILE" ]]; then
+    exit 0
+fi
+
+extract_manifest_action() {
+    local file="$1"
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.action // empty' "$file"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("action", ""))' "$file"
+    fi
+}
+
+ACTION="$(extract_manifest_action "$DISPATCH_MANIFEST_FILE")"
+
+case "$ACTION" in
+    agy-interactive|agy-print)
+        DISPATCH_AGY="$(resolve_dispatch_script "dispatch-agy.sh")"
+        if [[ "$DRY_RUN_DISPATCH" -eq 1 ]]; then
+            "$DISPATCH_AGY" --dry-run --manifest "$DISPATCH_MANIFEST_FILE"
+        else
+            # Copy manifest to a persistent path only until exec replaces the shell,
+            # or run dispatch-agy.sh as a child so our EXIT trap cleans up TMP_DIR.
+            "$DISPATCH_AGY" --manifest "$DISPATCH_MANIFEST_FILE"
+        fi
+        ;;
+    stdout|save-md|*)
+        DISPATCH_OUT="$(resolve_dispatch_script "dispatch-output.sh")"
+        "$DISPATCH_OUT" --manifest "$DISPATCH_MANIFEST_FILE"
+        ;;
+esac
