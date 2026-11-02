@@ -958,10 +958,10 @@ pub fn build_agy_command_preview(
     };
     let escaped = truncated.replace('"', "\\\"");
     format!(
-        "agy {} --model {} --effort {} \"{}\"",
-        mode.flag(),
+        "agy --model {} --effort {} {} \"{}\"",
         model_id,
         effort.as_str(),
+        mode.flag(),
         escaped
     )
 }

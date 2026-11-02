@@ -4,7 +4,7 @@
   <img src="assets/verbot-logo.svg" alt="Verbocity Logo" width="140" />
 </p>
 
-**Verbocity** (invoked on the terminal as `verbot`) is an interactive, multi-pane terminal prompt template engine and Antigravity (`agy`) CLI dispatcher styled in the **NovOS Cosmic Nova Orange & Deep Obsidian** palette with native **COSMIC Desktop Environment** integration.
+**Verbocity** (invoked on the terminal as `verbot`) is an interactive, multi-pane terminal prompt template engine and Antigravity (`agy`) CLI dispatcher with configurable style/theme presets and automatic desktop theme integration.
 
 It enables engineers, technicians, and power users to compose concise, high-density structured prompts (`Objective`, `Context/Logs`, `Constraints`, `Output`), dynamically format them for **Gemini**, **Claude**, or **GPT** model families without losing entered text, inspect a live shell-safe `agy` command preview, and dispatch directly into an in-app **Terminal Execution Output Pane** (`agy -p`) or an interactive **`agy -i`** handoff without closing Verbocity.
 
@@ -12,7 +12,7 @@ It enables engineers, technicians, and power users to compose concise, high-dens
 
 ## Table of Contents
 
-1. [Overview & Visual Identity](#1-overview--visual-identity)
+1. [Overview](#1-overview)
 2. [Installation](#2-installation)
    - [One-Line Remote `curl | bash` Installer](#one-line-remote-curl--bash-installer)
    - [Local Repository Build & Install](#local-repository-build--install)
@@ -36,22 +36,13 @@ It enables engineers, technicians, and power users to compose concise, high-dens
 
 ---
 
-## 1. Overview & Visual Identity
+## 1. Overview
 
-- **Full Application Name**: **Verbocity**
+- **Application Name**: **Verbocity**
 - **CLI Command**: `verbot` (backed by the compiled Rust core `verbot-tui` and modular dispatch scripts `dispatch-agy.sh` / `dispatch-output.sh`)
-- **Logo (`assets/verbot-logo.svg`)**: Cartoon small boxy robot with speaker-cone ears rendered in the NovOS Cosmic Nova Orange & Deep Obsidian palette.
-- **Non-Warping 3-Tier In-App Banner (`src/branding.rs`)**: Automatically adapts to your terminal dimensions (`Full 7-Row Banner` at `>=92x38`, `Medium 3-Row Banner` at `>=60x32`, and `Compact 1-Row Emblem` `◁(( [◉_◉] ))▷ VERBOCITY (verbot)` on smaller windows) without word-wrap shearing.
-- **Default NovOS Cosmic Nova Orange Palette (`src/theme.rs`)**:
-  - **Deep Obsidian Backdrop**: `#0B0C10` / `#07080B`
-  - **Cosmic Space Panel Surface**: `#121521` / `#0F121C`
-  - **Elevated Inactive Border Slate**: `#2A314A`
-  - **Primary Accent (COSMIC Nova Orange)**: `#FF6B1A` (`rgb(255, 107, 26)`)
-  - **Secondary Accent & Unfocused Field Headers (Accretion Amber)**: `#FF9E44` / `#FFB347`
-  - **Focused Title Highlight (Starlight Warm White)**: `#FFF3E0`
-  - **Primary Input Text (Starfield Cool White)**: `#D8E2FF`
-  - **Muted Placeholder Hint Text**: `#5A6588`
-- **COSMIC Desktop Environment Theme Ingestion**: Reads `~/.config/cosmic/com.system76.CosmicTheme.Mode/v1/is_dark` and `~/.config/cosmic/com.system76.CosmicTheme.Dark.Builder/v1/accent` RON float tuples automatically when set to `COSMIC System Auto`.
+- **Decoupled Multi-Model Prompt Engine**: Maintains canonical prompt field values (`Objective`, `Context/Logs`, `Constraints`, `Output`, plus custom template fields) in memory while dynamically rendering output into model-specific formats (`GeminiConcise`, `ClaudeXml`, `GptMarkdownSections`, or custom templates).
+- **Persistent In-App Execution & Interactive Handoff**: Streams `agy -p` output directly into an in-app scrollable terminal pane (`Ctrl+O`) and cleanly suspends/resumes `/dev/tty` for interactive `agy -i` sessions without losing your prompt state.
+- **Configurable Style & Theme Options**: Supports live theme preset cycling (`Ctrl+T`), automatic desktop dark/light & accent color detection, `Terminal ANSI` passthrough, and custom hex color token overrides persisted in `~/.config/verbot/theme.toml`.
 
 ---
 
@@ -90,12 +81,12 @@ What `./install.sh` sets up:
 2. Installs `verbot` and `verbot-tui` into `~/.local/bin` (and optionally symlinks `/usr/local/bin/{verbot,verbot-tui}` with `--system`).
 3. Idempotently ensures `export PATH="$HOME/.local/bin:$PATH"` is present in `~/.bashrc`, `~/.zshrc`, `~/.profile` (and `fish_add_path` in `~/.config/fish/config.fish`).
 4. Installs modular dispatch scripts into `~/.local/share/verbot/scripts/`.
-5. Installs the desktop icon (`~/.local/share/icons/hicolor/scalable/apps/verbot.svg`) and COSMIC launcher (`~/.local/share/applications/verbot.desktop`).
+5. Installs the desktop icon (`~/.local/share/icons/hicolor/scalable/apps/verbot.svg`) and desktop launcher (`~/.local/share/applications/verbot.desktop`).
 6. Initializes default `config.toml`, `theme.toml`, `models.toml`, and `templates/GeminiAgentPromptTemplate.{md,toml}` inside `~/.config/verbot/` without overwriting existing user customizations.
 
 ### System Packages (`.deb`, Portable `.tar.gz`, Arch `PKGBUILD`, RPM)
 
-- **Debian / Ubuntu / NovOS (`.deb`)**:
+- **Debian / Ubuntu (`.deb`)**:
   ```bash
   ./scripts/package.sh
   sudo dpkg -i dist/verbot_0.1.0_amd64.deb
@@ -178,7 +169,7 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 | `--continue` | | Pass `--continue` to `agy` to resume the most recent conversation |
 | `--ingest-model <FILE>` | | Validate and import a custom model `.toml` or `.yaml` file into `~/.config/verbot/models.toml` |
 | `--template <FILE>` | `-t` | Load a specific `.md`, `.toml`, or `.yaml` prompt template file |
-| `--theme <PRESET>` | | Override active theme preset (`NovOS Cosmic Dark`, `COSMIC System Auto`, `NovOS Solar Light`, `Terminal ANSI`) |
+| `--theme <PRESET>` | | Override active style/theme preset (dark, light, system auto, or `Terminal ANSI`) |
 | `--local` | | Store workspace state in project-local `./.verbot/state.toml` instead of XDG data cache |
 | `--objective <TEXT>` | | Populate the `Objective` field |
 | `--context <TEXT>` | | Populate or prepend to the `Context/Logs` field |
@@ -187,7 +178,7 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 | `--headless` | | Run non-interactively and emit the rendered prompt or dispatch manifest immediately |
 | `--action <ACTION>` | | Action for `--headless` mode (`agy-interactive`, `agy-print`, `stdout`, `save-md`) |
 | `--save-md <PATH>` | | Target file path when saving Markdown (`verbot-prompt.md` by default) |
-| `--self-test` | | Execute the full 9-step automated diagnostic and headless TUI verification suite |
+| `--self-test` | | Execute the full automated diagnostic and headless TUI verification suite |
 | `[OBJECTIVE]...` | | Trailing positional words/sentences are automatically joined into the `Objective` field |
 | `ingest <PATH>` | | Subcommand: validate and import a template into `~/.config/verbot/templates/` (supports `--local`, `--name`, `--dry-run`) |
 
@@ -197,7 +188,7 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 
 ### Interface Layout
 
-1. **Top Branding Header**: Displays the `VERBOCITY` block wordmark and speaker-eared boxy robot mascot (`◁((│ ◉   ◉ │))▷` / `(( [◉_◉] ))`).
+1. **Top Header**: Displays the responsive `VERBOCITY` header bar scaled to the active terminal dimensions.
 2. **Control Bar**: Quick selectors for `Family` (`Gemini`, `Claude`, `GPT`), `Sub-Model (Alt+M)`, `Effort (Alt+E)`, `Command`, and `Settings (Alt+S)`.
 3. **4 Soft-Wrapping Multiline Field Editors**:
    - `Objective`: Primary task or symptom description.
@@ -207,7 +198,7 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 4. **Live Prompt Preview (`Ctrl+P`) & Terminal Execution Output Pane (`Ctrl+O`)**:
    - Real-time model-formatted prompt preview (`GeminiConcise` bullets, `ClaudeXml` tags, or `GptMarkdownSections` headers), word/token conciseness estimator, and scrollable live output from executed `agy` runs.
 5. **Action Bar & `agy` Command Footer**:
-   - Displays the exact POSIX-quoted `agy` CLI command and lets you trigger actions `1..4` without closing Verbocity.
+   - Displays the exact POSIX-quoted `agy` CLI command (`agy --model <MODEL> --effort <EFFORT> [FLAGS...] <-p|-i> "<PROMPT>"`) and lets you trigger actions `1..4` without closing Verbocity.
 
 ### Global & Editor Keybindings Table
 
@@ -217,7 +208,7 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 | `Alt+S` | Global | Open / close the full-screen **Settings Page** (preserving all prompt text) |
 | `Alt+M` | Global | Cycle Sub-Model (`Argon`, `Flash`, `Opus`, `Sonnet`, `GPT-OSS 120B`, plus custom models) |
 | `Alt+E` | Global | Cycle Reasoning / Thinking Effort (`low`, `medium`, `high`, `xhigh`, `max`) |
-| `Ctrl+T` | Global | Cycle Theme Preset live (`NovOS Cosmic Dark` -> `COSMIC System Auto` -> `NovOS Solar Light` -> `Terminal ANSI`) |
+| `Ctrl+T` | Global | Cycle active Theme / Style Preset live (dark, system auto, light, `Terminal ANSI`) |
 | `Ctrl+P` | Global | Toggle collapsible **Live Prompt Preview** pane |
 | `Ctrl+O` | Global | Toggle **Terminal Execution Output Pane** (`FocusPane::TerminalOutput`) |
 | `@` or `Ctrl+F` | Field Editor | Open **CWD Fuzzy File Picker Modal** to filter and insert workspace file paths |
@@ -237,8 +228,8 @@ verbot --headless -c goal --action save-md --save-md ./sprint-task.md \
 ### Persistent Execution Loop & In-App Terminal Output Pane (`Ctrl+O`)
 
 Verbocity **does not close** when you execute an action—allowing you to iterate on prompts, inspect output, and re-run commands in a single session:
-- **Action 1 (`Run agy -i Interactive`)**: Temporarily suspends the Ratatui alternate screen, hands `/dev/tty` cleanly to the interactive `agy -i` session in your working directory, waits for `agy` to exit, and immediately resumes Verbocity with all fields and history intact.
-- **Action 2 (`Run agy -p Print`)**: Opens the in-app **Terminal Execution Output Pane (`Ctrl+O`)** and streams `stdout`/`stderr` live into a scrollable buffer (`Up/Down`/`PgUp/PgDn`/`End`, `Ctrl+L` to clear).
+- **Action 1 (`Run agy -i Interactive`)**: Temporarily suspends the Ratatui alternate screen, hands `/dev/tty` cleanly to the interactive `agy` session (`agy --model <ID> --effort <EFFORT> [FLAGS...] -i "<PROMPT>"`) in your working directory, waits for `agy` to exit, and immediately resumes Verbocity with all fields and history intact.
+- **Action 2 (`Run agy -p Print`)**: Opens the in-app **Terminal Execution Output Pane (`Ctrl+O`)** and streams `stdout`/`stderr` from `agy --model <ID> --effort <EFFORT> [FLAGS...] -p "<PROMPT>"` live into a scrollable buffer (`Up/Down`/`PgUp/PgDn`/`End`, `Ctrl+L` to clear).
 - **Action 3 (`Output to Stdout / Clipboard`)**: Copies the rendered prompt to your Wayland/X11 clipboard (`wl-copy`, `xclip`, or `xsel`) and logs it in the Terminal Output Pane.
 - **Action 4 (`Save to .md File`)**: Writes the rendered prompt to `verbot-prompt.md` (or custom path) and records confirmation in the Terminal Output Pane.
 
@@ -250,7 +241,7 @@ Press **`Alt+S`** (or launch with `verbot -s`) to open the 4-tab Settings Page. 
 
 ### Tab 1: Theme & Contrast (`~/.config/verbot/theme.toml`)
 
-Select a preset (`NovOS Cosmic Dark`, `COSMIC System Auto`, `NovOS Solar Light`, `Terminal ANSI`) or customize individual hex color tokens (`accent_primary`, `accent_secondary`, `text_primary`, `title_inactive`, `border_slate`, `placeholder_muted`) and press `Enter` to apply and persist to `~/.config/verbot/theme.toml`.
+Select a style preset (dark, system auto-detected, light, or `Terminal ANSI`) or customize individual hex color tokens (`accent_primary`, `accent_secondary`, `text_primary`, `title_inactive`, `border_slate`, `placeholder_muted`) and press `Enter` to apply and persist to `~/.config/verbot/theme.toml`.
 
 ### Tab 2: Models & TOML Ingestion (`~/.config/verbot/models.toml`)
 
@@ -323,7 +314,7 @@ Build all distribution packages locally into `./dist`:
 Generated artifacts in `dist/`:
 - `verbot-v<VERSION>-<ARCH>-unknown-linux-gnu.tar.gz` (portable bundle compatible with `install.sh --from-archive`)
 - `verbot-v<VERSION>-<ARCH>-unknown-linux-gnu.tar.gz.sha256`
-- `verbot_<VERSION>_<DEB_ARCH>.deb` (Debian/Ubuntu/NovOS package installing to `/usr/bin` and `/usr/share`)
+- `verbot_<VERSION>_<DEB_ARCH>.deb` (Debian/Ubuntu package installing to `/usr/bin` and `/usr/share`)
 - `SHA256SUMS`
 
 ### Automated GitHub Actions Workflows

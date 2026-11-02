@@ -1876,12 +1876,17 @@ impl App {
                     .unwrap_or(false);
 
                 if dry_run {
+                    let extra_joined = if manifest.agy_extra_flags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" {}", manifest.agy_extra_flags.join(" "))
+                    };
                     self.terminal_output.push_line(format!(
-                        "[Verbocity Dry-Run] {} -p --model {} --effort {} {}",
+                        "[Verbocity Dry-Run] {} --model {} --effort {}{} -p",
                         agy_bin.display(),
                         manifest.model_id,
                         manifest.effort,
-                        manifest.agy_extra_flags.join(" ")
+                        extra_joined
                     ));
                     self.terminal_output
                         .append_multiline(&manifest.rendered_prompt);
@@ -1897,12 +1902,12 @@ impl App {
 
                 let mut cmd = Command::new(&agy_bin);
                 cmd.current_dir(&self.cwd)
-                    .arg("-p")
                     .arg("--model")
                     .arg(&manifest.model_id)
                     .arg("--effort")
                     .arg(&manifest.effort)
                     .args(&manifest.agy_extra_flags)
+                    .arg("-p")
                     .arg(&manifest.rendered_prompt)
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped());
@@ -2034,12 +2039,17 @@ impl App {
             .unwrap_or(false);
 
         if dry_run {
+            let extra_joined = if manifest.agy_extra_flags.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", manifest.agy_extra_flags.join(" "))
+            };
             self.terminal_output.push_line(format!(
-                "[Verbocity Dry-Run] Interactive handoff: {} -i --model {} --effort {} {}",
+                "[Verbocity Dry-Run] Interactive handoff: {} --model {} --effort {}{} -i",
                 agy_bin.display(),
                 manifest.model_id,
                 manifest.effort,
-                manifest.agy_extra_flags.join(" ")
+                extra_joined
             ));
             self.terminal_output.last_exit_code = Some(0);
             self.status_message =
@@ -2050,12 +2060,12 @@ impl App {
 
         let mut cmd = Command::new(&agy_bin);
         cmd.current_dir(&self.cwd)
-            .arg("-i")
             .arg("--model")
             .arg(&manifest.model_id)
             .arg("--effort")
             .arg(&manifest.effort)
             .args(&manifest.agy_extra_flags)
+            .arg("-i")
             .arg(&manifest.rendered_prompt);
 
         // When a custom mock `agy` binary is used in headless self-tests, capture its output into the drawer

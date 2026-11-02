@@ -373,6 +373,9 @@ pub fn escape_for_double_quotes(input: &str) -> String {
 
 /// Builds both the raw OS `argv` vector and the POSIX-quoted `shell_safe_command` string for an
 /// `agy` invocation.
+///
+/// Places `--model`, `--effort`, and extra flags before `-p` / `-i` so that `-p` / `-i`
+/// immediately precedes its prompt argument (`agy --model <ID> --effort <EFFORT> [EXTRA...] <-p|-i> <PROMPT>`).
 pub fn build_shell_safe_agy_invocation(
     mode: AgyLaunchMode,
     model_id: &str,
@@ -383,13 +386,13 @@ pub fn build_shell_safe_agy_invocation(
 ) -> (Vec<String>, String) {
     let mut argv: Vec<String> = vec![
         "agy".to_string(),
-        mode.flag().to_string(),
         "--model".to_string(),
         model_id.to_string(),
         "--effort".to_string(),
         effort.as_str().to_string(),
     ];
     argv.extend(extra_flags.to_cli_args());
+    argv.push(mode.flag().to_string());
     argv.push(prompt.to_string());
 
     let mut shell_parts: Vec<String> = Vec::with_capacity(argv.len());
@@ -441,11 +444,11 @@ pub fn build_agy_footer_preview_with_flags(
     };
 
     format!(
-        "agy {} --model {} --effort {}{} \"{}\"",
-        mode.flag(),
+        "agy --model {} --effort {}{} {} \"{}\"",
         model_id,
         effort.as_str(),
         extra_str,
+        mode.flag(),
         escaped
     )
 }
@@ -598,7 +601,7 @@ mod tests {
             complex_prompt,
         );
         assert!(preview.starts_with(
-            "agy -i --model gemini-4-argon-medium --effort high --mode plan --sandbox \""
+            "agy --model gemini-4-argon-medium --effort high --mode plan --sandbox -i \""
         ));
     }
 }

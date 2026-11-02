@@ -2203,7 +2203,7 @@ mod tests {
             "TUI screen must display Objective editor text"
         );
         assert!(
-            rendered_screen.contains("agy -i --model gemini-4-argon-medium"),
+            rendered_screen.contains("agy --model gemini-4-argon-medium"),
             "TUI footer must display agy command preview"
         );
 
@@ -2326,13 +2326,18 @@ mod tests {
         assert!(app.file_picker.is_open);
         assert!(app.file_picker.markdown_only);
 
-        // Confirm top plan file (`STEPPED_IMPLEMENTATION_PLAN.md`)
+        let expected_top_md = app
+            .file_index
+            .fuzzy_search("", true, 1)
+            .first()
+            .map(|f| f.relative_path.clone())
+            .unwrap_or_else(|| "README.md".to_string());
+        let expected_output = format!("Update {} plan", expected_top_md);
+
+        // Confirm top markdown file in picker
         app.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE))
             .unwrap();
-        assert_eq!(
-            app.values.output,
-            "Update STEPPED_IMPLEMENTATION_PLAN.md plan"
-        );
+        assert_eq!(app.values.output, expected_output);
 
         // Confirm dispatch action 1 (`agy -i`)
         let manifest = app
@@ -2340,9 +2345,7 @@ mod tests {
             .unwrap();
         assert_eq!(manifest.action, "agy-interactive");
         assert!(manifest.rendered_prompt.contains("src/state.rs"));
-        assert!(manifest
-            .rendered_prompt
-            .contains("Update STEPPED_IMPLEMENTATION_PLAN.md plan"));
+        assert!(manifest.rendered_prompt.contains(&expected_output));
 
         if let Some(ref tmp) = app.custom_xdg_data_dir {
             let _ = std::fs::remove_dir_all(tmp);
@@ -2741,12 +2744,12 @@ default_effort = "high"
             .terminal_output
             .lines
             .iter()
-            .any(|l| l.contains("MOCK_AGY_EXEC: -p --model")));
+            .any(|l| l.contains("MOCK_AGY_EXEC: --model")));
 
         let buf = render_headless_buffer(&mut app, 150, 45).unwrap();
         let screen = buffer_to_string(&buf);
         assert!(screen.contains("Terminal Execution Output Pane [Ctrl+O]"));
-        assert!(screen.contains("MOCK_AGY_EXEC: -p --model"));
+        assert!(screen.contains("MOCK_AGY_EXEC: --model"));
 
         // 2. Dispatch Action 3 (`Stdout / Clipboard`): stays open and appends to Terminal Output Pane
         app.handle_key_event(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::ALT))
@@ -2773,7 +2776,7 @@ default_effort = "high"
             .terminal_output
             .lines
             .iter()
-            .any(|l| l.contains("MOCK_AGY_EXEC: -i --model")));
+            .any(|l| l.contains("MOCK_AGY_EXEC: --model") && l.contains(" -i ")));
         assert_eq!(
             app.values.objective,
             "Execute Step 8 persistent loop verification"

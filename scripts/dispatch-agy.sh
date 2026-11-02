@@ -4,8 +4,8 @@
 # ==============================================================================
 # Reads a structured JSON DispatchManifest written by `verbot-tui`, resolves the
 # `agy` executable (`command -v agy` or `~/.local/bin/agy`), constructs the
-# invocation (`agy -i --model "$MODEL_ID" --effort "$EFFORT" "$PROMPT"` or
-# `agy -p ...`), and execs it in the user's current working directory.
+# invocation (`agy --model "$MODEL_ID" --effort "$EFFORT" [EXTRA_FLAGS...] -i "$PROMPT"` or
+# `... -p "$PROMPT"`), and execs it in the user's current working directory.
 #
 # Environment / CLI overrides for automated testing:
 #   --dry-run                Print resolved agy invocation without executing agy
@@ -120,7 +120,7 @@ fi
 if [[ "$DRY_RUN" == "1" || "$DRY_RUN" == "true" ]]; then
     AGY_BIN="$(resolve_agy_bin || echo "agy")"
     echo "==> [Verbocity Dry-Run] CWD: $(pwd)"
-    echo "==> [Verbocity Dry-Run] Command: ${AGY_BIN} ${MODE_FLAG} --model ${MODEL_ID} --effort ${EFFORT} ${EXTRA_FLAGS[*]} <PROMPT>"
+    echo "==> [Verbocity Dry-Run] Command: ${AGY_BIN} --model ${MODEL_ID} --effort ${EFFORT} ${EXTRA_FLAGS[*]} ${MODE_FLAG} <PROMPT>"
     if [[ -n "$PREVIEW" ]]; then
         echo "==> [Verbocity Dry-Run] Preview: ${PREVIEW}"
     fi
@@ -136,4 +136,4 @@ if ! AGY_BIN="$(resolve_agy_bin)"; then
     exit 127
 fi
 
-exec "$AGY_BIN" "$MODE_FLAG" --model "$MODEL_ID" --effort "$EFFORT" "${EXTRA_FLAGS[@]}" "$PROMPT"
+exec "$AGY_BIN" --model "$MODEL_ID" --effort "$EFFORT" "${EXTRA_FLAGS[@]}" "$MODE_FLAG" "$PROMPT"

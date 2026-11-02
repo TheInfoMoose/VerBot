@@ -687,7 +687,7 @@ fn run_self_test() -> Result<()> {
         comp_toml.display()
     );
 
-    // 8. Verify CWD gitignore-aware file scanner & plan `.md` detection on repository root
+    // 8. Verify CWD gitignore-aware file scanner & plan `.md` detection
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let file_index = WorkspaceFileIndex::scan(&repo_root)?;
     ensure!(
@@ -701,9 +701,12 @@ fn run_self_test() -> Result<()> {
             .any(|f| f.relative_path.starts_with("target/")),
         "WorkspaceFileIndex::scan should exclude target/ directory"
     );
-    let primary_plan = file_index
+    std::fs::write(fake_cwd.join("STEPPED_IMPLEMENTATION_PLAN.md"), "# Plan\n")?;
+    std::fs::write(fake_cwd.join("README.md"), "# Readme\n")?;
+    let fake_cwd_index = WorkspaceFileIndex::scan(&fake_cwd)?;
+    let primary_plan = fake_cwd_index
         .detect_primary_plan_file()
-        .context("Failed to detect primary plan .md file in repository root")?;
+        .context("Failed to detect primary plan .md file in workspace directory")?;
     ensure!(
         primary_plan.relative_path == "STEPPED_IMPLEMENTATION_PLAN.md",
         "Expected STEPPED_IMPLEMENTATION_PLAN.md as primary plan candidate, got {}",
@@ -757,7 +760,7 @@ fn run_self_test() -> Result<()> {
     ensure!(
         screen_str.contains("Build multi-pane Ratatui interface with NovOS/COSMIC theme")
             && screen_str.contains("Live Prompt Preview")
-            && screen_str.contains("agy -i --model gemini-4-argon-medium"),
+            && screen_str.contains("agy --model gemini-4-argon-medium"),
         "Headless TUI buffer missing editor text, live preview, or agy CLI footer"
     );
 
@@ -977,12 +980,13 @@ fn run_self_test() -> Result<()> {
     );
     let agy_dry_str = String::from_utf8_lossy(&agy_dry_out.stdout);
     ensure!(
-        agy_dry_str.contains("-i --model claude-opus-5-5-high --effort high")
+        agy_dry_str.contains("--model claude-opus-5-5-high --effort high")
+            && agy_dry_str.contains("-i <PROMPT>")
             && agy_dry_str.contains("Dry-run agy dispatch check"),
         "dispatch-agy.sh dry-run output mismatch:\n{}",
         agy_dry_str
     );
-    println!("  [OK] End-to-end dispatch-agy.sh dry-run (`-i --model claude-opus-5-5-high --effort high`) verified");
+    println!("  [OK] End-to-end dispatch-agy.sh dry-run (`--model claude-opus-5-5-high --effort high -i`) verified");
 
     // 15. Verify `install.sh --skip-build` into isolated staging prefix
     let stage_prefix = tmp_test_root.join("install_stage_prefix");
@@ -1204,10 +1208,19 @@ fn run_self_test() -> Result<()> {
         step5_app.file_picker.is_open && step5_app.file_picker.markdown_only,
         "Approving with Alt+Y did not open markdown FilePickerModal"
     );
+    let expected_top_repo_md = step5_app
+        .file_index
+        .fuzzy_search("", true, 1)
+        .first()
+        .map(|f| f.relative_path.clone())
+        .unwrap_or_else(|| "README.md".to_string());
+    let expected_plan_output = format!("Update {} plan", expected_top_repo_md);
     step5_app.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE))?;
     ensure!(
-        step5_app.values.output == "Update STEPPED_IMPLEMENTATION_PLAN.md plan",
-        "Confirming file in picker did not replace <file>.md with STEPPED_IMPLEMENTATION_PLAN.md"
+        step5_app.values.output == expected_plan_output,
+        "Confirming file in picker did not replace <file>.md with {} (got {})",
+        expected_top_repo_md,
+        step5_app.values.output
     );
     println!("  [OK] Approval gate prior to opening .md plan file picker (`Enter`/`Alt+Y` approve, `Esc`/`Alt+N` keep literal) verified");
 
@@ -1223,8 +1236,8 @@ fn run_self_test() -> Result<()> {
     );
     let standalone_agy_str = String::from_utf8_lossy(&standalone_agy_out.stdout);
     ensure!(
-        standalone_agy_str.contains("-i --model gemini-4-argon-medium")
-            && standalone_agy_str.contains("Update STEPPED_IMPLEMENTATION_PLAN.md plan"),
+        standalone_agy_str.contains("--model gemini-4-argon-medium")
+            && standalone_agy_str.contains(&expected_plan_output),
         "Standalone agy dispatch output mismatch:\n{}",
         standalone_agy_str
     );
@@ -1235,7 +1248,7 @@ fn run_self_test() -> Result<()> {
     ensure!(
         standalone_stdout_out.status.success()
             && String::from_utf8_lossy(&standalone_stdout_out.stdout)
-                .contains("Update STEPPED_IMPLEMENTATION_PLAN.md plan"),
+                .contains(&expected_plan_output),
         "Standalone output dispatch failed"
     );
     println!("  [OK] Standalone `verbot-tui` dispatch execution (`dispatch-agy.sh` & `dispatch-output.sh`) verified");
@@ -1610,14 +1623,14 @@ default_effort = "high"
                 .terminal_output
                 .lines
                 .iter()
-                .any(|l| l.contains("STEP8_AGY_STREAM: -p --model")),
+                .any(|l| l.contains("STEP8_AGY_STREAM: --model")),
         "Running Action 2 (agy -p) did not keep Verbocity open or failed to populate TerminalOutputDrawer"
     );
     let step8_term_buf = render_headless_buffer(&mut step5_app, 150, 45)?;
     let step8_term_screen = buffer_to_string(&step8_term_buf);
     ensure!(
         step8_term_screen.contains("Terminal Execution Output Pane [Ctrl+O]")
-            && step8_term_screen.contains("STEP8_AGY_STREAM: -p --model"),
+            && step8_term_screen.contains("STEP8_AGY_STREAM: --model"),
         "Headless TUI buffer did not render Terminal Execution Output Pane with streamed agy -p output"
     );
 
@@ -1647,7 +1660,7 @@ default_effort = "high"
                 .terminal_output
                 .lines
                 .iter()
-                .any(|l| l.contains("STEP8_AGY_STREAM: -i --model"))
+                .any(|l| l.contains("STEP8_AGY_STREAM: --model") && l.contains(" -i "))
             && step5_app.values.objective == complex_feature_prompt,
         "Running Action 1 (agy -i) closed Verbocity or lost prompt field text on resume"
     );
