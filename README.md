@@ -53,17 +53,17 @@ It enables engineers, technicians, and power users to compose concise, high-dens
 Install the latest prebuilt release (or automatically fall back to building from source if no prebuilt archive matches your architecture):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash
 ```
 
 Pass installer options after `bash -s --`:
 
 ```bash
 # Force building from source via cargo:
-curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash -s -- --from-source
+curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash -s -- --from-source
 
 # Install a specific release tag into a custom prefix and symlink into /usr/local/bin:
-curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash -s -- --version v0.1.0 --prefix "$HOME/.local" --system
+curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash -s -- --version v0.1.0 --prefix "$HOME/.local" --system
 ```
 
 ### Local Repository Build & Install
@@ -71,7 +71,7 @@ curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | 
 Clone the repository and run `./install.sh`:
 
 ```bash
-git clone https://github.com/InfoMoose/VerBot.git
+git clone https://github.com/TheInfoMoose/VerBot.git
 cd VerBot
 ./install.sh
 ```

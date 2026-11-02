@@ -2026,7 +2026,7 @@ default_effort = "high"
     let readme_raw = std::fs::read_to_string(repo_root.join("README.md"))
         .context("Missing README.md")?;
     for required_doc_section in [
-        "curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash",
+        "curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash",
         "Complete CLI Flags & Modifiers Reference",
         "Global & Editor Keybindings Table",
         "Settings Page (`Alt+S`) & Extending Verbocity",
@@ -2040,10 +2040,74 @@ default_effort = "high"
             required_doc_section
         );
     }
+    let install_raw = std::fs::read_to_string(repo_root.join("install.sh"))
+        .context("Missing install.sh")?;
+    let pkgbuild_raw = std::fs::read_to_string(repo_root.join("packaging/arch/PKGBUILD"))
+        .context("Missing packaging/arch/PKGBUILD")?;
+    let spec_raw = std::fs::read_to_string(repo_root.join("packaging/rpm/verbot.spec"))
+        .context("Missing packaging/rpm/verbot.spec")?;
+    ensure!(
+        install_raw.contains("TheInfoMoose/VerBot")
+            && !install_raw.contains("/InfoMoose/VerBot")
+            && !install_raw.contains(":-InfoMoose/VerBot")
+            && pkgbuild_raw.contains("https://github.com/TheInfoMoose/VerBot")
+            && spec_raw.contains("https://github.com/TheInfoMoose/VerBot"),
+        "Repository slug TheInfoMoose/VerBot not consistently configured across install.sh, PKGBUILD, and verbot.spec"
+    );
     println!("  [OK] GitHub Actions workflows (ci.yml, release.yml) YAML validated and README.md instructional manual verified");
+
+    // 37. Verify Step 11 prebuilt release asset resolution via `SHA256SUMS` when the release tag (`v.0.01.0`)
+    //     differs from the crate version (`0.1.0`) in the tarball filename.
+    let mock_release_base = tmp_test_root.join("mock_releases");
+    let mock_tag_dir = mock_release_base.join("download/v.0.01.0");
+    std::fs::create_dir_all(&mock_tag_dir)?;
+    let tar_file_name = tarball_path
+        .file_name()
+        .context("Missing tarball filename")?;
+    std::fs::copy(&tarball_path, mock_tag_dir.join(tar_file_name))?;
+    std::fs::copy(&sums_path, mock_tag_dir.join("SHA256SUMS"))?;
+
+    let step11_prefix = tmp_test_root.join("step11_release_prefix");
+    let step11_config = tmp_test_root.join("step11_release_config");
+    let mut step11_child = std::process::Command::new("bash")
+        .current_dir(&curl_empty_cwd)
+        .env(
+            "VERBOT_RELEASE_BASE_URL",
+            format!("file://{}", mock_release_base.display()),
+        )
+        .args([
+            "-s",
+            "--",
+            "--version",
+            "v.0.01.0",
+            "--no-modify-path",
+            "--prefix",
+            &step11_prefix.to_string_lossy(),
+            "--config-dir",
+            &step11_config.to_string_lossy(),
+        ])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .context("Failed to spawn bash for Step 11 remote release resolution test")?;
+
+    if let Some(mut stdin_pipe) = step11_child.stdin.take() {
+        use std::io::Write;
+        stdin_pipe.write_all(&install_script_bytes)?;
+    }
+    let step11_out = step11_child.wait_with_output()?;
+    ensure!(
+        step11_out.status.success()
+            && step11_prefix.join("bin/verbot").is_file()
+            && step11_prefix.join("bin/verbot-tui").is_file(),
+        "Step 11 remote release resolution (`--version v.0.01.0` with SHA256SUMS asset discovery) failed: {}",
+        String::from_utf8_lossy(&step11_out.stderr)
+    );
+    println!("  [OK] Step 11 remote release resolution verified (`TheInfoMoose/VerBot` slug & `SHA256SUMS` asset lookup for tag `v.0.01.0`)");
 
     let _ = std::fs::remove_dir_all(&tmp_test_root);
 
-    println!("==> [Verbocity Self-Test] ALL STEP 1, STEP 2, STEP 3, STEP 4, STEP 5, STEP 6, STEP 7, STEP 8 & STEP 9 CHECKS PASSED.");
+    println!("==> [Verbocity Self-Test] ALL STEP 1, STEP 2, STEP 3, STEP 4, STEP 5, STEP 6, STEP 7, STEP 8, STEP 9, STEP 10 & STEP 11 CHECKS PASSED.");
     Ok(())
 }

@@ -23,7 +23,7 @@
 
 set -euo pipefail
 
-VERBOT_REPO="${VERBOT_REPO:-InfoMoose/VerBot}"
+VERBOT_REPO="${VERBOT_REPO:-TheInfoMoose/VerBot}"
 VERBOT_VERSION="${VERBOT_VERSION:-latest}"
 VERBOT_GIT_REF="${VERBOT_GIT_REF:-main}"
 VERBOT_GIT_URL="${VERBOT_GIT_URL:-https://github.com/${VERBOT_REPO}.git}"
@@ -95,14 +95,14 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             cat <<'EOF'
 Usage: ./install.sh [OPTIONS]
-   or: curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash
-   or: curl -fsSL https://raw.githubusercontent.com/InfoMoose/VerBot/main/install.sh | bash -s -- [OPTIONS]
+   or: curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash
+   or: curl -fsSL https://raw.githubusercontent.com/TheInfoMoose/VerBot/main/install.sh | bash -s -- [OPTIONS]
 
 Options:
   --skip-build           Use existing target/release/verbot-tui or bundled binary without invoking cargo
   --from-source          Force remote source clone/tarball download and `cargo build --release`
   --from-archive <FILE>  Install from a local or pre-downloaded release `.tar.gz` archive
-  --repo <OWNER/REPO>    GitHub repository slug for remote release/source downloads (default: InfoMoose/VerBot)
+  --repo <OWNER/REPO>    GitHub repository slug for remote release/source downloads (default: TheInfoMoose/VerBot)
   --version <TAG>        Release version tag to install (default: latest, e.g. v0.1.0 or 0.1.0)
   --dry-run              Print planned installation steps without writing files
   --prefix <DIR>         Install prefix for bin/ and share/ (default: ~/.local)
@@ -263,23 +263,55 @@ download_remote_release_or_source() {
     if [[ "$FROM_SOURCE" -eq 0 && "$os_name" == "linux" ]] && command -v curl >/dev/null 2>&1; then
         local resolved_tag="$VERBOT_VERSION"
         if [[ "$resolved_tag" == "latest" ]]; then
-            resolved_tag="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${VERBOT_RELEASE_BASE_URL}/latest" 2>/dev/null | awk -F'/' '{print $NF}' || true)"
+            resolved_tag="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${VERBOT_RELEASE_BASE_URL}/latest" 2>/dev/null | tr -d '\r' | awk -F'/' '{print $NF}' || true)"
+            if [[ -z "$resolved_tag" || "$resolved_tag" == "latest" || "$resolved_tag" == "releases" ]]; then
+                resolved_tag="$(curl -fsSL "https://api.github.com/repos/${VERBOT_REPO}/releases/latest" 2>/dev/null | awk -F'"' '/"tag_name"[[:space:]]*:/ { print $4; exit }' || true)"
+            fi
         fi
         if [[ -n "$resolved_tag" && "$resolved_tag" != "latest" && "$resolved_tag" != "releases" ]]; then
-            local ver_no_v="${resolved_tag#v}"
-            local tarball_name="verbot-v${ver_no_v}-${arch}-unknown-linux-gnu.tar.gz"
-            local tarball_url="${VERBOT_RELEASE_BASE_URL}/download/${resolved_tag}/${tarball_name}"
             local sums_url="${VERBOT_RELEASE_BASE_URL}/download/${resolved_tag}/SHA256SUMS"
-            local dl_tar="${TMP_WORK_DIR}/${tarball_name}"
             local dl_sums="${TMP_WORK_DIR}/SHA256SUMS"
-            echo "==> [Verbocity Installer] Attempting prebuilt release download: ${tarball_url}"
-            if curl -fsSL "$tarball_url" -o "$dl_tar" 2>/dev/null; then
-                curl -fsSL "$sums_url" -o "$dl_sums" 2>/dev/null || true
-                verify_sha256_if_available "$dl_tar" "$dl_sums"
-                unpack_archive_to_repo_root "$dl_tar" "${TMP_WORK_DIR}/release"
-                SKIP_BUILD=1
-                return 0
+            local manifest_tarball=""
+            if curl -fsSL "$sums_url" -o "$dl_sums" 2>/dev/null && [[ -s "$dl_sums" ]]; then
+                manifest_tarball="$(awk '{print $2}' "$dl_sums" | sed 's/^\*//' | grep -E "^verbot-.*-${arch}-unknown-linux-gnu\.tar\.gz$" | head -n 1 || true)"
             fi
+
+            local ver_clean="${resolved_tag#v.}"
+            ver_clean="${ver_clean#v}"
+            local candidate_tarballs=()
+            if [[ -n "$manifest_tarball" ]]; then
+                candidate_tarballs+=("$manifest_tarball")
+            fi
+            for fallback_tar in \
+                "verbot-v${ver_clean}-${arch}-unknown-linux-gnu.tar.gz" \
+                "verbot-${resolved_tag}-${arch}-unknown-linux-gnu.tar.gz"
+            do
+                local already_added=0
+                for existing_tar in "${candidate_tarballs[@]:-}"; do
+                    if [[ "$existing_tar" == "$fallback_tar" ]]; then
+                        already_added=1
+                        break
+                    fi
+                done
+                if [[ "$already_added" -eq 0 ]]; then
+                    candidate_tarballs+=("$fallback_tar")
+                fi
+            done
+
+            for tarball_name in "${candidate_tarballs[@]}"; do
+                local tarball_url="${VERBOT_RELEASE_BASE_URL}/download/${resolved_tag}/${tarball_name}"
+                local dl_tar="${TMP_WORK_DIR}/${tarball_name}"
+                echo "==> [Verbocity Installer] Attempting prebuilt release download: ${tarball_url}"
+                if curl -fsSL "$tarball_url" -o "$dl_tar" 2>/dev/null; then
+                    if [[ ! -s "$dl_sums" ]]; then
+                        curl -fsSL "${tarball_url}.sha256" -o "$dl_sums" 2>/dev/null || true
+                    fi
+                    verify_sha256_if_available "$dl_tar" "$dl_sums"
+                    unpack_archive_to_repo_root "$dl_tar" "${TMP_WORK_DIR}/release"
+                    SKIP_BUILD=1
+                    return 0
+                fi
+            done
             echo "==> [Verbocity Installer] Prebuilt binary not found for ${resolved_tag} (${arch}); falling back to source build..."
         fi
     fi
@@ -287,17 +319,28 @@ download_remote_release_or_source() {
     # 2. Fallback: Download source tarball or shallow git clone into TMP_WORK_DIR
     local src_extract="${TMP_WORK_DIR}/src"
     mkdir -p "$src_extract"
-    local tarball_ref_url="https://github.com/${VERBOT_REPO}/archive/refs/heads/${VERBOT_GIT_REF}.tar.gz"
+    local source_urls=()
     if [[ "$VERBOT_VERSION" != "latest" ]]; then
-        local tag_ref="v${VERBOT_VERSION#v}"
-        tarball_ref_url="https://github.com/${VERBOT_REPO}/archive/refs/tags/${tag_ref}.tar.gz"
+        local ver_clean="${VERBOT_VERSION#v.}"
+        ver_clean="${ver_clean#v}"
+        source_urls+=(
+            "https://github.com/${VERBOT_REPO}/archive/refs/tags/${VERBOT_VERSION}.tar.gz"
+            "https://github.com/${VERBOT_REPO}/archive/refs/tags/v${ver_clean}.tar.gz"
+        )
+    fi
+    source_urls+=("https://github.com/${VERBOT_REPO}/archive/refs/heads/${VERBOT_GIT_REF}.tar.gz")
+
+    if command -v curl >/dev/null 2>&1; then
+        for tarball_ref_url in "${source_urls[@]}"; do
+            if curl -fsSL "$tarball_ref_url" -o "${TMP_WORK_DIR}/source.tar.gz" 2>/dev/null; then
+                echo "==> [Verbocity Installer] Downloaded source archive from ${tarball_ref_url}"
+                unpack_archive_to_repo_root "${TMP_WORK_DIR}/source.tar.gz" "$src_extract"
+                return 0
+            fi
+        done
     fi
 
-    if command -v curl >/dev/null 2>&1 && curl -fsSL "$tarball_ref_url" -o "${TMP_WORK_DIR}/source.tar.gz" 2>/dev/null; then
-        echo "==> [Verbocity Installer] Downloaded source archive from ${tarball_ref_url}"
-        unpack_archive_to_repo_root "${TMP_WORK_DIR}/source.tar.gz" "$src_extract"
-        return 0
-    elif command -v git >/dev/null 2>&1; then
+    if command -v git >/dev/null 2>&1; then
         echo "==> [Verbocity Installer] Cloning ${VERBOT_GIT_URL} (${VERBOT_GIT_REF})..."
         git clone --depth 1 --branch "$VERBOT_GIT_REF" "$VERBOT_GIT_URL" "${src_extract}/repo"
         REPO_ROOT="${src_extract}/repo"

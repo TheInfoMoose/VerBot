@@ -68,6 +68,7 @@ extract_cargo_version() {
 }
 
 VERSION="${VERSION_OVERRIDE:-$(extract_cargo_version)}"
+VERSION="${VERSION#v.}"
 VERSION="${VERSION#v}"
 if [[ -z "$VERSION" ]]; then
     VERSION="0.1.0"

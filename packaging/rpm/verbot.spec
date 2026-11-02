@@ -3,7 +3,7 @@ Version:        0.1.0
 Release:        1%{?dist}
 Summary:        Verbocity (verbot) — Interactive terminal LLM prompt template engine and agy dispatcher
 License:        MIT
-URL:            https://github.com/InfoMoose/VerBot
+URL:            https://github.com/TheInfoMoose/VerBot
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  cargo
